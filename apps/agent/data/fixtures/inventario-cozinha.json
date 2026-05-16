@@ -1,0 +1,52 @@
+[
+  {
+    "id": "item-001",
+    "nome": "Jogo de pratos",
+    "categoria": "fragil",
+    "quantidade": 8,
+    "comodo": "Cozinha",
+    "instrucao_embalagem": "Embrulhar cada prato individualmente com papel bolha.",
+    "peso_estimado_kg": 4.0,
+    "volume_estimado_l": 8.0
+  },
+  {
+    "id": "item-002",
+    "nome": "Panela de pressão",
+    "categoria": "utensilio",
+    "quantidade": 1,
+    "comodo": "Cozinha",
+    "instrucao_embalagem": "Remover borracha de vedação antes de embalar.",
+    "peso_estimado_kg": 3.5,
+    "volume_estimado_l": 12.0
+  },
+  {
+    "id": "item-003",
+    "nome": "Micro-ondas",
+    "categoria": "eletro",
+    "quantidade": 1,
+    "comodo": "Cozinha",
+    "instrucao_embalagem": "Embalar na caixa original ou com espuma nas laterais.",
+    "peso_estimado_kg": 12.0,
+    "volume_estimado_l": 40.0
+  },
+  {
+    "id": "item-004",
+    "nome": "Mantimentos secos",
+    "categoria": "alimento",
+    "quantidade": 1,
+    "comodo": "Cozinha",
+    "instrucao_embalagem": "Verificar validade e vedar embalagens abertas com fita.",
+    "peso_estimado_kg": 5.0,
+    "volume_estimado_l": 15.0
+  },
+  {
+    "id": "item-005",
+    "nome": "Porta-guardanapos",
+    "categoria": "outro",
+    "quantidade": 1,
+    "comodo": "Cozinha",
+    "instrucao_embalagem": "Embalar junto com outros utensílios pequenos.",
+    "peso_estimado_kg": 0.3,
+    "volume_estimado_l": 1.0
+  }
+]

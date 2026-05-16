@@ -233,7 +233,7 @@ class LocalJsonStore:
         return new_row
 
     def database_title(self) -> str:
-        return "Local: starter data"
+        return "Inventário local (fixture)"
 
     def is_local(self) -> bool:
         return True
@@ -299,7 +299,7 @@ def boot_status() -> str:
         rows = store.list_leads()
         return (
             f'ok: source=local path="{local_path.relative_to(_AGENT_ROOT)}" '
-            f"rows={len(rows)} (set NOTION_TOKEN + NOTION_LEADS_DATABASE_ID to "
+            f"itens={len(rows)} (set NOTION_TOKEN + NOTION_LEADS_DATABASE_ID to "
             "switch to Notion)"
         )
     # Notion path — defer to the existing health check so any setup
@@ -312,7 +312,7 @@ def boot_status() -> str:
     missing = health.get("missing_props") or []
     error = health.get("error")
     if error:
-        return f'error: {error} (db="{db_title}", rows={rows}, missing={missing})'
+        return f'error: {error} (db="{db_title}", itens={rows}, missing={missing})'
     return (
-        f'ok: source=notion db="{db_title}" rows={rows} missing={missing}'
+        f'ok: source=notion db="{db_title}" itens={rows} missing={missing}'
     )

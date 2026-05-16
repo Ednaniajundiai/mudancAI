@@ -1,0 +1,77 @@
+[
+  {
+    "transportadora_id": "trans-001",
+    "nome": "MudaFácil Express",
+    "logo": "🚛",
+    "avaliacao": 4.8,
+    "inclui_seguro": true,
+    "observacoes": "Especialista em mudanças residenciais. Equipe treinada para itens frágeis.",
+    "precos_base": {
+      "por_litro": 0.12,
+      "por_caixa": 8.50,
+      "taxa_frageis": 25.00,
+      "minimo": 350.00
+    },
+    "prazo_base_dias": 2
+  },
+  {
+    "transportadora_id": "trans-002",
+    "nome": "TransLar Logística",
+    "logo": "🏠",
+    "avaliacao": 4.5,
+    "inclui_seguro": false,
+    "observacoes": "Seguro opcional disponível por +R$80. Melhor custo-benefício para volumes médios.",
+    "precos_base": {
+      "por_litro": 0.09,
+      "por_caixa": 6.00,
+      "taxa_frageis": 40.00,
+      "minimo": 250.00
+    },
+    "prazo_base_dias": 3
+  },
+  {
+    "transportadora_id": "trans-003",
+    "nome": "CargoHome Premium",
+    "logo": "⭐",
+    "avaliacao": 4.9,
+    "inclui_seguro": true,
+    "observacoes": "Serviço premium com embalagem incluída. Garantia de entrega no prazo ou reembolso.",
+    "precos_base": {
+      "por_litro": 0.18,
+      "por_caixa": 12.00,
+      "taxa_frageis": 0.00,
+      "minimo": 600.00
+    },
+    "prazo_base_dias": 1
+  },
+  {
+    "transportadora_id": "trans-004",
+    "nome": "EcoMove",
+    "logo": "🌱",
+    "avaliacao": 4.3,
+    "inclui_seguro": false,
+    "observacoes": "Frota elétrica. Ideal para distâncias curtas. Sem taxa adicional para frágeis com embalagem adequada.",
+    "precos_base": {
+      "por_litro": 0.10,
+      "por_caixa": 7.00,
+      "taxa_frageis": 15.00,
+      "minimo": 200.00
+    },
+    "prazo_base_dias": 2
+  },
+  {
+    "transportadora_id": "trans-005",
+    "nome": "MudaBem Cooperativa",
+    "logo": "🤝",
+    "avaliacao": 4.6,
+    "inclui_seguro": true,
+    "observacoes": "Cooperativa local de São Paulo. Preços justos, atendimento humanizado.",
+    "precos_base": {
+      "por_litro": 0.11,
+      "por_caixa": 7.50,
+      "taxa_frageis": 20.00,
+      "minimo": 300.00
+    },
+    "prazo_base_dias": 2
+  }
+]

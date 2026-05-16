@@ -57,7 +57,7 @@ load_dotenv()
 
 
 @tool
-def fetch_notion_leads(
+def fetch_inventario(
     database_id: Annotated[
         str,
         "Notion database ID. Pass an empty string to use NOTION_LEADS_DATABASE_ID from env, or to use the bundled local store when Notion isn't configured.",
@@ -104,28 +104,26 @@ def fetch_notion_leads(
             )
 
         # Compute the summary the model would otherwise have to compute itself.
-        workshop_counts = Counter(
-            (r.get("workshop") or "Not sure yet") for r in rows
+        comodo_counts = Counter(
+            (r.get("comodo") or "Sem cômodo") for r in rows
         )
-        top_workshop, top_count = (
-            workshop_counts.most_common(1)[0] if workshop_counts else ("Not sure yet", 0)
+        top_comodo, top_count = (
+            comodo_counts.most_common(1)[0] if comodo_counts else ("Sem cômodo", 0)
         )
-        opt_in_count = sum(1 for r in rows if r.get("opt_in"))
 
         db_title = store.database_title()
         source_label = "local starter data" if store.is_local() else "Notion"
 
         summary = (
-            f"Imported {len(rows)} leads from {source_label}. "
-            f"Top demand: {top_workshop} ({top_count} signups). "
-            f"Opt-in: {opt_in_count}/{len(rows)}."
+            f"Imported {len(rows)} itens from {source_label}. "
+            f"Top comodo: {top_comodo} ({top_count} itens)."
         )
 
         update: dict[str, Any] = {
             "leads": rows,
             "header": {
-                "title": "Workshop Lead Triage",
-                "subtitle": f"{len(rows)} leads from {source_label} · top demand: {top_workshop}",
+                "title": "MudançAI",
+                "subtitle": f"{len(rows)} itens de {source_label} · top cômodo: {top_comodo}",
             },
             "sync": {
                 # `databaseId` stays Notion-flavored on Notion, blank on
@@ -154,7 +152,7 @@ def fetch_notion_leads(
 
 
 @tool
-def find_lead(
+def find_item(
     query: Annotated[
         str,
         "A name (or partial name) to look up in state.leads. Case-insensitive. "
@@ -246,7 +244,7 @@ def find_lead(
 
 
 @tool
-def default_notion_database_id() -> str:
+def default_store_id() -> str:
     """Return the configured Notion DB id, or a local-store sentinel.
 
     Returns:
@@ -267,7 +265,7 @@ def default_notion_database_id() -> str:
 
 
 @tool
-def notion_health_check() -> str:
+def store_health_check() -> str:
     """Verify the active store. Notion when configured; local cache otherwise.
 
     Returns a JSON string. On Notion, it's the full
@@ -335,8 +333,8 @@ def _summarize_patch(patch: Dict[str, Any]) -> str:
 
 
 @tool
-def update_notion_lead(
-    lead_id: Annotated[str, "Notion page id of the lead row to patch."],
+def update_item(
+    lead_id: Annotated[str, "Notion page id of the item row to patch."],
     patch: Annotated[
         Dict[str, Any],
         "Partial Lead. Keys match the Lead shape (workshop / technical_level / "
@@ -440,7 +438,7 @@ def update_notion_lead(
 
 
 @tool
-def insert_notion_lead(
+def insert_item(
     lead: Annotated[
         Dict[str, Any],
         "Full Lead dict (name, company, email, role, technical_level, "
@@ -575,29 +573,36 @@ def post_lead_comment(
         )
 
 
-def load_notion_tools() -> List[Any]:
+def load_tools() -> List[Any]:
     """Return the Notion-flavored backend tool list for the agent.
 
     Always includes:
-    - `fetch_notion_leads`        (Command(update=) — see issue 006)
-    - `find_lead`                 (state.leads name → real id resolver)
-    - `default_notion_database_id`
-    - `notion_health_check`
-    - `update_notion_lead`        (phase 04 — Command(update=) write-back)
-    - `insert_notion_lead`        (phase 04 — Command(update=) write-back)
+    - `parse_inventory`     (fase 1 — retorna itens estruturados de um cômodo)
+    - `fetch_inventario`        (Command(update=) — see issue 006)
+    - `find_item`                 (state.leads name → real id resolver)
+    - `default_store_id`
+    - `store_health_check`
+    - `update_item`        (phase 04 — Command(update=) write-back)
+    - `insert_item`        (phase 04 — Command(update=) write-back)
 
     The Notion MCP server is spawned per-call inside `notion_mcp.py`, so
     no setup happens here — the only env this function depends on is
     `NOTION_LEADS_DATABASE_ID` (read by the tools themselves).
     """
+    from .tools.parse_inventory import parse_inventory
+    from .tools.generate_packing_plan import generate_packing_plan
+    from .tools.quote_freight import quote_freight
+
     tools: List[Any] = [
-        fetch_notion_leads,
-        find_lead,
-        default_notion_database_id,
-        notion_health_check,
-        update_notion_lead,
-        insert_notion_lead,
-        post_lead_comment,
+        parse_inventory,
+        generate_packing_plan,
+        quote_freight,
+        fetch_inventario,
+        find_item,
+        default_store_id,
+        store_health_check,
+        update_item,
+        insert_item,
     ]
     print(f"Backend tools loaded: {len(tools)} tools")
     return tools

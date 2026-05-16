@@ -53,18 +53,12 @@ else
     esac
     return 1
   }
-  for VAR in GEMINI_API_KEY NOTION_TOKEN NOTION_LEADS_DATABASE_ID; do
+  for VAR in GEMINI_API_KEY; do
     val="$(read_var "$VAR" || true)"
     if is_stub "$val"; then
       case "$VAR" in
         GEMINI_API_KEY)
           PROBLEMS+=("$VAR is unset (or a stub) in apps/agent/.env. Get a key at https://aistudio.google.com -> Get API key.")
-          ;;
-        NOTION_TOKEN)
-          PROBLEMS+=("$VAR is unset (or a stub) in apps/agent/.env. Get a token at https://notion.so/my-integrations -> New integration -> Internal Integration Token.")
-          ;;
-        NOTION_LEADS_DATABASE_ID)
-          PROBLEMS+=("$VAR is unset in apps/agent/.env. Paste the database id from your Notion database URL.")
           ;;
       esac
     fi
