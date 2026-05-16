@@ -27,7 +27,7 @@ from dotenv import load_dotenv
 
 from src.intelligence_cleanup import wipe_orphan_threads
 from src.lead_store import boot_status as _lead_store_boot_status
-from src.notion_tools import load_notion_tools
+from src.notion_tools import load_tools
 from src.prompts import build_system_prompt
 from src.runtime import build_graph
 
@@ -83,7 +83,7 @@ if _AGENT_RUNTIME.startswith("gemini-") and (
     )
 
 
-backend_tools = load_notion_tools()
+backend_tools = load_tools()
 
 
 _integration_status = _format_integration_status()

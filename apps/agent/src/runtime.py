@@ -22,7 +22,7 @@ from langgraph.graph.state import CompiledStateGraph
 
 from copilotkit import CopilotKitMiddleware
 
-from .lead_state import LeadStateMiddleware
+from .lead_state import MudancAIStateMiddleware
 from .timing import TimingMiddleware
 
 
@@ -47,7 +47,7 @@ _VALID_RUNTIMES = (
 # 3s reply with this text instead of hanging on "thinking…".
 NOOP_FALLBACK_MESSAGE = (
     "Set `GEMINI_API_KEY` in agent/.env to enable the agent. "
-    "The starter is otherwise fully wired and will work as soon as you add a key."
+    "The MudançAI is otherwise fully wired and will work as soon as you add a key."
 )
 
 
@@ -79,7 +79,7 @@ def build_graph(
         runtime = "gemini-flash-deep"
 
     timing = TimingMiddleware()
-    lead_state = LeadStateMiddleware()
+    lead_state = MudancAIStateMiddleware()
     copilotkit = CopilotKitMiddleware()
     middleware = [timing, lead_state, copilotkit]
 

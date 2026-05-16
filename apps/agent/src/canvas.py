@@ -12,55 +12,26 @@ to `create_deep_agent(tools=[...])` would cause Gemini to reject the request
 with "Duplicate function declaration found: <name>". They live here as a
 quick contract reference for anyone reading the agent code. The actual
 schema is in `apps/frontend/src/app/leads/page.tsx`.
-
-The state shape mirrors the React `AgentState` shape; canvas state flows
-through CopilotKit's shared-state mechanism (`useAgent` +
-`agent.setState(...)`), not via the deepagents API. `create_deep_agent`
-does not accept (and does not need) a `state_schema=` kwarg.
-
-Frontend tool surface (all declared on the React side):
-
-  state mutators:
-    setHeader, setLeads, setSyncMeta, setFilter, clearFilters,
-    highlightLeads, selectLead, commitLeadEdit
-  controlled gen UI:
-    renderLeadMiniCard, renderWorkshopDemand
-  open gen UI:
-    everything else falls through `useDefaultRenderTool` to a generic
-    CopilotKit-branded card.
 """
 
 from typing import Annotated, Any, Dict, List, Literal, Optional, TypedDict
 from typing_extensions import NotRequired
 
 
-# --- Lead shape (mirrors apps/frontend/src/lib/leads/types.ts) -------------
-
-
-class Lead(TypedDict, total=False):
+class Item(TypedDict, total=False):
     id: str
-    url: str
-    name: str
-    company: str
-    email: str
-    role: str
-    phone: str
-    source: str
-    technical_level: str
-    interested_in: List[str]
-    tools: List[str]
-    workshop: str
-    status: str
-    opt_in: bool
-    message: str
-    submitted_at: str
+    nome: str
+    categoria: str
+    quantidade: int
+    comodo: str
+    instrucao_embalagem: str
+    peso_estimado_kg: float
+    volume_estimado_l: float
 
 
-class LeadFilter(TypedDict):
-    workshops: List[str]
-    technical_levels: List[str]
-    tools: List[str]
-    opt_in: Literal["any", "yes", "no"]
+class ItemFilter(TypedDict):
+    categorias: List[str]
+    comodos: List[str]
     search: str
 
 
@@ -71,8 +42,8 @@ class SyncMeta(TypedDict):
 
 
 class CanvasState(TypedDict):
-    leads: List[Lead]
-    filter: LeadFilter
+    leads: List[Item]
+    filter: ItemFilter
     highlightedLeadIds: List[str]
     selectedLeadId: Optional[str]
     header: NotRequired[Dict[str, str]]
@@ -80,14 +51,6 @@ class CanvasState(TypedDict):
 
 
 # --- Frontend tool contract (documentation only — NOT registered) ---------
-#
-# The functions below mirror the `useFrontendTool` registrations in
-# `apps/frontend/src/app/leads/page.tsx`. They exist so reviewers can see
-# the contract at a glance from the agent side. They are deliberately NOT
-# included in `frontend_tool_stubs` and NOT passed to
-# `create_deep_agent(tools=)`. The React side declares them to the runtime,
-# which forwards them to the agent at run time.
-
 
 def setHeader(
     title: Annotated[Optional[str], "New workspace heading title."] = None,
@@ -98,10 +61,10 @@ def setHeader(
 
 
 def setLeads(
-    leads: Annotated[List[Lead], "Full lead list — replaces canvas state."],
+    leads: Annotated[List[Item], "Full item list — replaces canvas state."],
 ) -> str:
-    """REPLACE the entire canvas lead list."""
-    return f"setLeads({len(leads)} leads)"
+    """REPLACE the entire canvas item list."""
+    return f"setLeads({len(leads)} items)"
 
 
 def setSyncMeta(
@@ -109,12 +72,12 @@ def setSyncMeta(
     databaseTitle: Annotated[Optional[str], "Notion DB title."] = None,
     syncedAt: Annotated[Optional[str], "ISO timestamp of last sync."] = None,
 ) -> str:
-    """Record which lead store the canvas mirrors."""
+    """Record which store the canvas mirrors."""
     return f"setSyncMeta({databaseId}, {databaseTitle}, {syncedAt})"
 
 
 def setFilter(
-    patch: Annotated[Dict[str, Any], "Partial LeadFilter patch."],
+    patch: Annotated[Dict[str, Any], "Partial ItemFilter patch."],
 ) -> str:
     """Partial-merge into the canvas filter."""
     return f"setFilter({patch})"
@@ -126,42 +89,17 @@ def clearFilters() -> str:
 
 
 def highlightLeads(
-    leadIds: Annotated[List[str], "Lead ids to visually highlight."],
+    leadIds: Annotated[List[str], "Item ids to visually highlight."],
 ) -> str:
     """Highlight a set of cards (visual emphasis only — not a filter)."""
     return f"highlightLeads({leadIds})"
 
 
 def selectLead(
-    leadId: Annotated[Optional[str], "Lead id to open, or None to close."],
+    leadId: Annotated[Optional[str], "Item id to open, or None to close."],
 ) -> str:
-    """Open / close the lead detail panel."""
+    """Open / close the item detail panel."""
     return f"selectLead({leadId})"
 
-
-def commitLeadEdit(
-    leadId: Annotated[str, "Lead id."],
-    patch: Annotated[Dict[str, Any], "Partial Lead patch."],
-) -> str:
-    """Persist a single-lead patch to Notion AND to canvas state."""
-    return f"commitLeadEdit({leadId}, {patch})"
-
-
-def renderLeadMiniCard(
-    leadId: Annotated[str, "Real lead id — see find_lead."],
-    name: Annotated[Optional[str], "Optional display name."] = None,
-) -> str:
-    """Render an inline lead card in the chat stream."""
-    return f"renderLeadMiniCard({leadId}, {name})"
-
-
-def renderWorkshopDemand() -> str:
-    """Render an inline mini-chart of workshop demand."""
-    return "renderWorkshopDemand()"
-
-
-# --- Export list ----------------------------------------------------------
-# Intentionally empty: tools are declared on the React side via
-# `useFrontendTool` and forwarded by the runtime. See module docstring.
 
 frontend_tool_stubs: list = []

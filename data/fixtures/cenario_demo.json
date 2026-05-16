@@ -1,0 +1,143 @@
+{
+  "descricao": "Cenário de demo: apartamento 2 quartos em São Paulo",
+  "inventario": [
+    {
+      "id": "item-001",
+      "nome": "Sofá 3 lugares",
+      "categoria": "outro",
+      "quantidade": 1,
+      "comodo": "Sala",
+      "instrucao_embalagem": "Cobrir com plástico bolha e manta acolchoada",
+      "peso_estimado_kg": 45.0,
+      "volume_estimado_l": 600.0
+    },
+    {
+      "id": "item-002",
+      "nome": "TV 55 polegadas",
+      "categoria": "eletro",
+      "quantidade": 1,
+      "comodo": "Sala",
+      "instrucao_embalagem": "Caixa original ou isopor nas bordas, posição vertical",
+      "peso_estimado_kg": 18.0,
+      "volume_estimado_l": 120.0
+    },
+    {
+      "id": "item-003",
+      "nome": "Taças de cristal",
+      "categoria": "fragil",
+      "quantidade": 12,
+      "comodo": "Sala",
+      "instrucao_embalagem": "Papel bolha individual, caixa pequena com divisórias",
+      "peso_estimado_kg": 2.4,
+      "volume_estimado_l": 15.0
+    },
+    {
+      "id": "item-004",
+      "nome": "Cama casal",
+      "categoria": "outro",
+      "quantidade": 1,
+      "comodo": "Quarto principal",
+      "instrucao_embalagem": "Desmontar, proteger cabeceira com plástico bolha",
+      "peso_estimado_kg": 30.0,
+      "volume_estimado_l": 400.0
+    },
+    {
+      "id": "item-005",
+      "nome": "Guarda-roupa 6 portas",
+      "categoria": "outro",
+      "quantidade": 1,
+      "comodo": "Quarto principal",
+      "instrucao_embalagem": "Desmontar e embalar por módulo",
+      "peso_estimado_kg": 60.0,
+      "volume_estimado_l": 800.0
+    },
+    {
+      "id": "item-006",
+      "nome": "Geladeira duplex",
+      "categoria": "eletro",
+      "quantidade": 1,
+      "comodo": "Cozinha",
+      "instrucao_embalagem": "Manter vertical, desligar 24h antes. Fixar portas.",
+      "peso_estimado_kg": 70.0,
+      "volume_estimado_l": 500.0
+    },
+    {
+      "id": "item-007",
+      "nome": "Micro-ondas",
+      "categoria": "eletro",
+      "quantidade": 1,
+      "comodo": "Cozinha",
+      "instrucao_embalagem": "Caixa com isopor lateral",
+      "peso_estimado_kg": 12.0,
+      "volume_estimado_l": 60.0
+    },
+    {
+      "id": "item-008",
+      "nome": "Panelas e utensílios",
+      "categoria": "utensilio",
+      "quantidade": 1,
+      "comodo": "Cozinha",
+      "instrucao_embalagem": "Caixas de papelão com preenchimento, tampas separadas",
+      "peso_estimado_kg": 8.0,
+      "volume_estimado_l": 40.0
+    },
+    {
+      "id": "item-009",
+      "nome": "Notebook",
+      "categoria": "eletro",
+      "quantidade": 2,
+      "comodo": "Escritório",
+      "instrucao_embalagem": "Caixa original ou case rígido",
+      "peso_estimado_kg": 3.6,
+      "volume_estimado_l": 12.0
+    },
+    {
+      "id": "item-010",
+      "nome": "Livros",
+      "categoria": "outro",
+      "quantidade": 1,
+      "comodo": "Escritório",
+      "instrucao_embalagem": "Caixas pequenas (máx 15kg cada), posição vertical",
+      "peso_estimado_kg": 25.0,
+      "volume_estimado_l": 80.0
+    }
+  ],
+  "caixas": [
+    {
+      "id": "caixa-1",
+      "etiqueta": "FRÁGIL — Sala: Cristais e Eletrônicos",
+      "itens_ids": ["item-003", "item-002"],
+      "materiais": ["papel bolha", "isopor", "divisórias de papelão"],
+      "instrucoes": "Manter na vertical. Não empilhar outros volumes sobre esta caixa.",
+      "peso_total_kg": 20.4,
+      "frageis": true,
+      "prioridade_descarga": 1
+    },
+    {
+      "id": "caixa-2",
+      "etiqueta": "Cozinha: Panelas e Utensílios",
+      "itens_ids": ["item-008", "item-007"],
+      "materiais": ["papel jornal", "papelão ondulado"],
+      "instrucoes": "Empilhar máximo 2 caixas.",
+      "peso_total_kg": 20.0,
+      "frageis": false,
+      "prioridade_descarga": 3
+    },
+    {
+      "id": "caixa-3",
+      "etiqueta": "Escritório: Notebooks e Livros",
+      "itens_ids": ["item-009", "item-010"],
+      "materiais": ["espuma protetora", "papelão reforçado"],
+      "instrucoes": "Notebooks em case individual. Livros em posição vertical.",
+      "peso_total_kg": 28.6,
+      "frageis": true,
+      "prioridade_descarga": 2
+    }
+  ],
+  "resumo_volume": {
+    "volume_total_l": 2227.0,
+    "num_caixas": 3,
+    "tem_frageis": true,
+    "peso_total_kg": 274.0
+  }
+}

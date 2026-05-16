@@ -1,20 +1,27 @@
 import { MCPServer, text, widget } from "mcp-use/server";
 import { z } from "zod";
-import {
-  leadSchema,
-  segmentSchema,
-  type Lead,
-  type Segment,
-} from "./src/lib/leads/types";
-import { topWorkshop } from "./src/lib/leads/derive";
-import { SAMPLE_LEADS, SAMPLE_SEGMENTS } from "./src/lib/leads/sample";
+import { quoteFreightInput, showQuoteCardsInput } from "./src/lib/mudancai/types";
+import { gerarCotacoes, SAMPLE_COTACOES } from "./src/lib/mudancai/fixtures";
+
+// ---------------------------------------------------------------------------
+// MudançAI MCP Server
+// Responsabilidade da Pessoa C (Platform Engineer + Demo Owner)
+//
+// Tools expostas:
+//   1. quote_freight     — chamada pelo agente Python (apps/agent/)
+//                          retorna JSON com lista de cotações (Cotacao[])
+//   2. show_quote_cards  — widget visual para o chat (ChatGPT / Claude / mcp-use inspector)
+//                          renderiza cards comparativos de transportadoras
+// ---------------------------------------------------------------------------
 
 const server = new MCPServer({
-  name: "hackathon-mcp",
-  title: "hackathon-mcp",
+  name: "mudancai-mcp",
+  title: "MudançAI — Cotações de Mudança",
   version: "1.0.0",
   description:
-    "Workshop Lead Triage — visual MCP widgets for the Notion-sourced workshop leads canvas: list, demand, pipeline, dashboard (stats + donut + bars), and a HITL email-draft card.",
+    "MCP server do MudançAI: cotações de transportadoras residenciais em tempo real. " +
+    "Recebe volume total, número de caixas e flag de frágeis; retorna lista ordenada " +
+    "por preço com prazo, avaliação, seguro e observações.",
   baseUrl: process.env.MCP_URL || "http://localhost:3011",
   favicon: "favicon.ico",
   websiteUrl: "https://mcp-use.com",
@@ -27,214 +34,148 @@ const server = new MCPServer({
   ],
 });
 
-// Shared input schema. All three tools accept an optional `leads` array (and
-// `segments`, where applicable). When omitted or empty, the widget falls back
-// to the sample dataset baked into `src/lib/leads/sample.ts` so the views can
-// be demoed inside ChatGPT/Claude without a backing fetch.
-const leadsInput = z.object({
-  leads: z
-    .array(leadSchema)
-    .default([])
-    .describe(
-      "Lead rows. Omit or pass an empty array to render with the sample dataset.",
-    ),
-  segments: z
-    .array(segmentSchema)
-    .default([])
-    .describe("Optional segments for colored dots."),
+// ---------------------------------------------------------------------------
+// Tool 1: quote_freight
+// Chamada pelo agente Python via MCP tool call.
+// Retorna JSON puro (sem widget) — o agente persiste no estado CopilotKit.
+// ---------------------------------------------------------------------------
+
+server.tool(
+  {
+    name: "quote_freight",
+    description:
+      "Retorna cotações de transportadoras para uma mudança residencial. " +
+      "Recebe o volume total em litros, o número de caixas e se há itens frágeis. " +
+      "Retorna uma lista de cotações ordenadas por preço (menor primeiro), cada uma " +
+      "com transportadora_id, nome, logo, preco_brl, prazo_dias, avaliacao, " +
+      "inclui_seguro e observacoes. Chamar após generate_packing_plan.",
+    schema: quoteFreightInput,
+  },
+  async ({ volume_total_l, num_caixas, tem_frageis }) => {
+    const cotacoes = gerarCotacoes(volume_total_l, num_caixas, tem_frageis);
+
+    const resumo =
+      cotacoes.length > 0
+        ? `${cotacoes.length} cotações geradas. ` +
+          `Menor preço: R$ ${cotacoes[0].preco_brl.toFixed(2)} (${cotacoes[0].nome}). ` +
+          `Entrega mais rápida: ${Math.min(...cotacoes.map((c) => c.prazo_dias))} dia(s).`
+        : "Nenhuma cotação disponível.";
+
+    return text(JSON.stringify({ cotacoes, resumo }, null, 2));
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Tool 2: show_quote_cards
+// Widget visual para exibir cotações de forma comparativa no chat.
+// Pode ser chamada diretamente pelo usuário ou pelo agente após quote_freight.
+// ---------------------------------------------------------------------------
+
+server.tool(
+  {
+    name: "show_quote_cards",
+    description:
+      "Renderiza um widget visual comparativo de cotações de transportadoras para mudança residencial. " +
+      "Aceita a lista de cotações retornada por quote_freight. " +
+      "Se omitido ou vazio, usa cotações de demonstração (apartamento 2 quartos típico). " +
+      "Exibe preço, prazo, avaliação, inclusão de seguro e observações de cada transportadora.",
+    schema: showQuoteCardsInput,
+    widget: {
+      name: "quote-cards",
+      invoking: "Buscando cotações…",
+      invoked: "Cotações prontas",
+    },
+  },
+  async (input) => {
+    const cotacoes =
+      input.cotacoes && input.cotacoes.length > 0 ? input.cotacoes : SAMPLE_COTACOES;
+
+    const melhor = cotacoes[0];
+    const resumo =
+      melhor != null
+        ? `${cotacoes.length} transportadoras comparadas. ` +
+          `Melhor opção: ${melhor.nome} por R$ ${melhor.preco_brl.toFixed(2)} ` +
+          `em ${melhor.prazo_dias} dia(s).`
+        : "Nenhuma cotação disponível para exibir.";
+
+    return widget({
+      props: {
+        cotacoes,
+        volume_total_l: input.volume_total_l,
+        num_caixas: input.num_caixas,
+        tem_frageis: input.tem_frageis,
+      },
+      output: text(resumo),
+    });
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Tool 3: show_moving_summary
+// Widget de resumo da mudança: inventário + caixas + melhor cotação.
+// Usado na fase final da demo (roteiro 02:00+).
+// ---------------------------------------------------------------------------
+
+const movingSummaryInput = z.object({
+  num_itens: z.number().int().nonnegative().default(0),
+  num_comodos: z.number().int().nonnegative().default(0),
+  num_caixas: z.number().int().nonnegative().default(0),
+  volume_total_l: z.number().nonnegative().default(0),
+  tem_frageis: z.boolean().default(false),
+  cotacao_escolhida: z
+    .object({
+      nome: z.string(),
+      logo: z.string(),
+      preco_brl: z.number(),
+      prazo_dias: z.number().int(),
+      inclui_seguro: z.boolean(),
+    })
+    .optional()
+    .describe("Cotação selecionada pelo usuário. Omitir se ainda não escolheu."),
 });
 
-function pickLeads(input: { leads: Lead[] }): Lead[] {
-  return input.leads.length ? input.leads : SAMPLE_LEADS;
-}
-
-function pickSegments(input: { segments: Segment[] }): Segment[] {
-  return input.segments.length ? input.segments : SAMPLE_SEGMENTS;
-}
-
-function summarize(leads: Lead[], view: string): string {
-  const top = topWorkshop(leads);
-  const tail = top ? ` Top demand: ${top}.` : "";
-  return `Rendered the ${view} view for ${leads.length} leads.${tail}`;
-}
-
 server.tool(
   {
-    name: "show-lead-list",
+    name: "show_moving_summary",
     description:
-      "Render the workshop lead triage *list* view (KPI tiles + table of leads).",
-    schema: leadsInput,
+      "Renderiza um painel resumo da mudança residencial: total de itens, cômodos, " +
+      "caixas, volume e a cotação escolhida. Chamar ao final do fluxo, após o usuário " +
+      "selecionar a transportadora. Use os dados do estado do agente.",
+    schema: movingSummaryInput,
     widget: {
-      name: "lead-list",
-      invoking: "Loading leads…",
-      invoked: "List ready",
+      name: "moving-summary",
+      invoking: "Preparando resumo…",
+      invoked: "Resumo pronto",
     },
   },
   async (input) => {
-    const leads = pickLeads(input);
-    const segments = pickSegments(input);
+    const { num_itens, num_comodos, num_caixas, volume_total_l, tem_frageis, cotacao_escolhida } =
+      input;
+
+    const linhas = [
+      `📦 Resumo da mudança`,
+      `• Itens catalogados: ${num_itens}`,
+      `• Cômodos: ${num_comodos}`,
+      `• Caixas embaladas: ${num_caixas}`,
+      `• Volume total: ${volume_total_l.toLocaleString("pt-BR")} L`,
+      tem_frageis ? "• ⚠ Possui itens frágeis" : "",
+      cotacao_escolhida
+        ? `• Transportadora: ${cotacao_escolhida.logo} ${cotacao_escolhida.nome} — R$ ${cotacao_escolhida.preco_brl.toFixed(2)} em ${cotacao_escolhida.prazo_dias} dia(s)`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
     return widget({
-      props: { leads, segments },
-      output: text(summarize(leads, "list")),
+      props: input,
+      output: text(linhas),
     });
   },
 );
 
-server.tool(
-  {
-    name: "show-lead-demand",
-    description:
-      "Render the workshop lead triage *demand* view (workshop bars, technical-level donut, tool usage).",
-    schema: leadsInput.pick({ leads: true }),
-    widget: {
-      name: "lead-demand",
-      invoking: "Aggregating leads…",
-      invoked: "Demand ready",
-    },
-  },
-  async (input) => {
-    const leads = pickLeads(input);
-    return widget({
-      props: { leads },
-      output: text(summarize(leads, "demand")),
-    });
-  },
-);
-
-server.tool(
-  {
-    name: "show-lead-pipeline",
-    description:
-      "Render the workshop lead triage *pipeline* view (kanban columns by status, read-only).",
-    schema: leadsInput,
-    widget: {
-      name: "lead-pipeline",
-      invoking: "Loading pipeline…",
-      invoked: "Pipeline ready",
-    },
-  },
-  async (input) => {
-    const leads = pickLeads(input);
-    const segments = pickSegments(input);
-    return widget({
-      props: { leads, segments },
-      output: text(summarize(leads, "pipeline")),
-    });
-  },
-);
-
-server.tool(
-  {
-    name: "show-canvas-dashboard",
-    description:
-      "Render the Workshop Lead Triage canvas dashboard: 4 quick-stat tiles + status donut + workshop-demand bars. Mirrors the layout above the kanban in the Next.js canvas.",
-    schema: leadsInput.pick({ leads: true }),
-    widget: {
-      name: "canvas-dashboard",
-      invoking: "Aggregating leads…",
-      invoked: "Dashboard ready",
-    },
-  },
-  async (input) => {
-    const leads = pickLeads(input);
-    return widget({
-      props: { leads },
-      output: text(summarize(leads, "dashboard")),
-    });
-  },
-);
-
-// Sample draft used when the inspector calls show-email-draft with no
-// arguments. Mirrors the SAMPLE_LEADS fallback the other widgets use so the
-// widget renders cleanly out of the box.
-const SAMPLE_DRAFT = {
-  leadId: "sample-ada-lovelace",
-  leadName: "Ada Lovelace",
-  leadEmail: "ada.lovelace@example.com",
-  leadCompany: "Mango Labs",
-  leadRole: "Founder",
-  subject: "Following up on your Agentic UI workshop interest",
-  body:
-    "Hi Ada,\n\n" +
-    "Thanks for signing up for the Agentic UI (AG-UI) workshop — your background at Mango Labs is exactly the profile we're building the curriculum for.\n\n" +
-    "A quick question before we lock the date: are there one or two specific patterns (state sync, tool gating, HITL) you're hoping we cover?\n\n" +
-    "Best,\nWorkshop team",
-};
-
-server.tool(
-  {
-    name: "show-email-draft",
-    description:
-      "Render a human-in-the-loop email draft for a single lead. Subject and body are editable in place; clicking Send calls post-email-comment to persist the message as a Notion comment. Defaults to a sample draft when called with no arguments.",
-    schema: z.object({
-      leadId: z
-        .string()
-        .default(SAMPLE_DRAFT.leadId)
-        .describe("Notion page id of the lead to email."),
-      leadName: z.string().default(SAMPLE_DRAFT.leadName).optional(),
-      leadEmail: z.string().default(SAMPLE_DRAFT.leadEmail).optional(),
-      leadCompany: z.string().default(SAMPLE_DRAFT.leadCompany).optional(),
-      leadRole: z.string().default(SAMPLE_DRAFT.leadRole).optional(),
-      subject: z
-        .string()
-        .default(SAMPLE_DRAFT.subject)
-        .describe("Initial subject line — user may edit before sending."),
-      body: z
-        .string()
-        .default(SAMPLE_DRAFT.body)
-        .describe("Initial email body — user may edit before sending."),
-    }),
-    widget: {
-      name: "email-draft",
-      invoking: "Drafting email…",
-      invoked: "Draft ready",
-    },
-  },
-  async (input) => {
-    const props = {
-      ...SAMPLE_DRAFT,
-      ...input,
-    };
-    return widget({
-      props,
-      output: text(
-        `Drafted an email to ${props.leadName ?? props.leadEmail ?? props.leadId}: ${props.subject}`,
-      ),
-    });
-  },
-);
-
-server.tool(
-  {
-    name: "post-email-comment",
-    description:
-      "Post an APPROVED email draft as a comment on the lead's Notion page. Called by the email-draft widget when the user clicks Send. Returns a confirmation message. Defaults to the sample draft when called with no arguments.",
-    schema: z.object({
-      leadId: z
-        .string()
-        .default(SAMPLE_DRAFT.leadId)
-        .describe("Notion page id of the lead."),
-      subject: z
-        .string()
-        .default(SAMPLE_DRAFT.subject)
-        .describe("Final subject line, after the user's edits."),
-      body: z
-        .string()
-        .default(SAMPLE_DRAFT.body)
-        .describe("Final email body, after the user's edits."),
-    }),
-  },
-  async ({ leadId, subject, body: _body }) => {
-    // Mock-only in this MCP demo. The same shape ships in the Next.js
-    // canvas's post_lead_comment LangChain tool, which posts to Notion via
-    // @notionhq/notion-mcp-server. Wire that server here when running
-    // against a live workspace.
-    return text(
-      `Posted email comment on lead ${leadId}: "${subject}"`,
-    );
-  },
-);
+// ---------------------------------------------------------------------------
 
 server.listen().then(() => {
-  console.log("MCP server running on port 3011");
+  console.log("🚚 MudançAI MCP server rodando na porta 3011");
+  console.log("   Tools: quote_freight | show_quote_cards | show_moving_summary");
 });
